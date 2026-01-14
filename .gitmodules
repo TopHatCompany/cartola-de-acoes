@@ -4,3 +4,6 @@
 [submodule "cartola-de-acoes-go-worker"]
 	path = cartola-de-acoes-go-worker
 	url = git@github.com:TopHatCompany/cartola-de-acoes-go-worker
+[submodule "cartola-de-acoes-nestjs-backend"]
+	path = cartola-de-acoes-nestjs-backend
+	url = git@github.com:TopHatCompany/cartola-de-acoes-nestjs-backend
