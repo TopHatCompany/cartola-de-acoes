@@ -339,7 +339,7 @@ Technology choices are intentionally kept out of the PRD. See [TECH_ASSESSMENT.m
 ### 11.1 Data Source
 - [ ] Which market(s) to support first? (B3 for Brazilian stocks?)
 - [ ] Which API/service for price data? (Recommendation: Start with Yahoo Finance + Brapi.dev)
-- [ ] How to handle dividends and corporate actions? (Get from API or manual update)
+- [ ] How to handle dividends and corporate actions? (Get from API )
 
 ### 11.2 Game Mechanics
 - [ ] Exact starting capital amount? (Suggestion: R$ 100,000 virtual)

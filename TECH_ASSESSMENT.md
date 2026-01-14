@@ -205,35 +205,31 @@ Self-hosted (local Docker):
 3. **Fly.io** (PAYG with one-time ~$5 trial credit; requires card; sub-$5 bills often waived)
 4. **Render** (Easy but cold starts are annoying)
 
-### 4.4 Zero-Cost Hybrid: BFF + Self-Hosted Workers
+### 4.4 Zero-Cost Hybrid: Cloudflare Pages + Oracle Worker (Final)
 
-Goal: keep a lightweight "frontend/BFF" always-online at $0 while running data ingestion and report generation on a self-hosted box you control.
+Goal (final): keep a lightweight frontend (with optional edge BFF) always-online at $0 using Cloudflare Pages, while running data ingestion and report generation on an Oracle Always Free VM you control.
 
 Architecture summary:
-- Module A – Frontend/BFF (always up, $0):
-  - Serves the web UI and exposes a thin read-only API for the app.
-  - Pulls pre-computed data from the database; no heavy compute here.
-  - Caches frequently-read data in-memory or at the edge.
-  - Hosting options (free):
-    - Cloudflare Pages + Functions/Workers (best fit for $0, global edge, great limits)
-    - Vercel Free (excellent DX; keep functions light)
-    - Netlify Free (similar to Vercel)
+- Module A – Frontend (Cloudflare Pages, always up, $0):
+  - Serves the web UI; optional thin edge BFF via Pages Functions/Workers for caching or simple read endpoints.
+  - Pulls pre-computed data from the backend/DB; no heavy compute.
+  - Hosting: Cloudflare Pages (final choice).
 
-- Module B – Self-hosted Worker (cron + ETL + reports):
-  - Runs scheduled jobs to fetch market data, perform ETL, compute scores, and generate reports.
-  - Pushes results into the shared database and/or publishes static artifacts.
-  - Runs on your own hardware (Docker/Compose). Outbound-only networking; no public ingress required.
-  - Scheduling options: system cron, Docker cron container, or a single long-lived process with an internal scheduler (e.g., APScheduler/node-cron/quartz).
+- Module B – Self-hosted Worker (Go + cron on Oracle):
+  - Written in Go, scheduled via cron on Oracle Cloud Always Free VM.
+  - Fetches market data, performs ETL, computes scores, generates reports.
+  - Pushes results into Supabase Postgres; outbound-only networking; no public ingress.
+  - Packaging: Docker image; provisioning via simple scripts.
 
-- Shared Data Layer (free tier):
-  - Primary: PostgreSQL (Neon 3GB free or Supabase 500MB free).
-  - Artifacts: avoid object storage initially; store compact JSON/CSV in Postgres, or publish static pages to the frontend host (Pages/Vercel) during CI.
-  - Optional cache/queue: Upstash Redis free tier (for small pub/sub or job signals), or skip and rely on DB polling.
+- Shared Data Layer (final):
+  - Supabase Postgres (free tier) + Supabase Auth.
+  - Start without object storage; store compact JSON/CSV in Postgres or publish static pages during CI when needed.
+  - Optional cache/queue later if required.
 
-Data flow:
+Data flow (final):
 1) Worker fetches EOD quotes from Yahoo Finance/brapi.dev, computes aggregates/scores.
 2) Worker upserts normalized rows into Postgres (idempotent writes).
-3) BFF queries Postgres and serves pre-computed views to the UI with aggressive caching.
+3) Frontend or edge functions query backend/NestJS (which reads Supabase) and serve pre-computed views to the UI with aggressive caching.
 
 Security & ops:
 - Use a service account for the worker with least-privilege DB role.
@@ -241,10 +237,10 @@ Security & ops:
 - Secrets via .env on the worker host; rotate periodically.
 - Monitoring: UptimeRobot for the BFF, provider logs for functions; simple local logs for the worker.
 
-Cost profile ($0 target):
-- Frontend/BFF on Cloudflare Pages/Vercel: $0 within free limits.
-- Database on Neon/Supabase free tier: $0 while under storage/connection quotas.
-- Self-hosted worker: $0 cloud spend (uses your machine and power).
+Cost profile ($0 target, final):
+- Frontend on Cloudflare Pages: $0 within free limits.
+- Supabase Postgres/Auth: $0 within free tier.
+- Worker on Oracle Always Free VM: $0 cloud spend.
 
 Trade-offs:
 - Your machine’s uptime becomes the source-of-truth for new data; the site remains online even if the worker is offline, but data will lag.
@@ -252,9 +248,25 @@ Trade-offs:
 - Free DB tiers have storage/connection limits—design queries and indexes accordingly.
 
 Scale/migration path:
-- Move the worker to a hosted scheduler when needed (choices: Railway cron, Fly.io Machines, GitHub Actions nightly, or AWS EventBridge + Lambda). BFF stays unchanged.
-- Add a queue later (Upstash Redis → paid; AWS SQS → minimal cost) if you need retries and DLQs.
+- Migrate worker to AWS Lambda + EventBridge later if ops burden grows (keep Go code; adjust I/O).
+- Add queue (Upstash Redis or AWS SQS) if you need retries/DLQs.
 - Introduce object storage/CDN when report artifacts get large.
+
+### 4.5 Go Worker: AWS Lambda vs Oracle VPS (Always Free)
+
+We will implement the worker in Go. Two $0-oriented deployment paths:
+
+- AWS Lambda + EventBridge (serverless):
+  - Pros: pay-per-use, auto-scaling from 0, minimal ops, generous free tier for small workloads.
+  - Cons: more moving parts (IAM, EventBridge, secrets), cold starts, observability in CloudWatch, 12‑month new-account caveats for some services.
+  - Best when: jobs are short, stateless, and infrequent; you prefer not to manage a VM.
+
+- VPS Cron on Oracle Cloud Always Free (Ampere):
+  - Pros: fully $0 VM, no cold start; can run multiple jobs and long tasks; simple cron; same place as your NestJS backend.
+  - Cons: you manage OS security, updates, and uptime; need TLS egress hygiene and secret management.
+  - Best when: you already use Oracle for backend, want one ops surface, and need predictable schedules.
+
+Final decision: run the Go worker via cron on the Oracle Always Free VM (shared com backend ou em segunda instância free). Lambda permanece como migração futura opcional.
 
 ### 4.2 Database Hosting Comparison
 
@@ -576,61 +588,98 @@ Scheduler: EventBridge (cron jobs)
 
 ### 10.1 For This Project Specifically
 
-**Recommended: Option A (Modern Full-Stack JS)**
-
-**Reasoning:**
-1. **Speed to MVP:** TypeScript/Node.js is fastest to develop
-2. **Free tier fit:** Low memory usage, works great on Railway
-3. **Stock data:** Good libraries available (yahoo-finance2)
-4. **One language:** Easier context switching
-5. **Ecosystem:** Largest, most resources for any problem
-6. **Deployment:** Simplest path to production
+**Final Decisions: Cloudflare Pages + NestJS (Oracle) + Supabase + Go Worker**
 
 **Stack:**
 ```yaml
-Frontend:
-  - Framework: React + Vite
-  - UI: shadcn/ui + Tailwind CSS
-  - State: Zustand or TanStack Query
-  - Forms: React Hook Form
-  - Routing: React Router
+Frontend (Cloudflare Pages, $0):
+  - React 19 + Vite + TypeScript
+  - Redux Toolkit + RTK Query
+  - shadcn/ui + Tailwind CSS v4
+  - React Hook Form
+  - React Router
+  - pnpm
+  - Deploy: Cloudflare Pages (final)
 
-Backend:
-  - Runtime: Node.js 20 LTS
-  - Framework: Express + TypeScript
-  - ORM: Prisma
-  - Validation: Zod
-  - Auth: JWT + bcrypt
+Backend (Oracle Always Free, $0):
+  - NestJS (TypeScript)
+  - Integrates: Supabase Postgres + Supabase Auth (JWT validation)
+  - Deploy: Oracle Cloud Always Free VM (Ampere)
 
-Database:
-  - Engine: PostgreSQL 15
-  - Host: Neon (3GB free)
-  - Migrations: Prisma Migrate
+Worker (Oracle Always Free, $0):
+  - Go (cron jobs)
+  - Tasks: EOD fetch, ETL, scoring, reports
+  - Deploy: cron on Oracle VM; Dockerized
 
-Infrastructure:
-  - Backend: Railway ($5 credit/month)
-  - Frontend: Vercel (free tier)
-  - Email: MailerSend (12k emails/month)
-  - Data: Yahoo Finance (unlimited)
-  - Monitoring: UptimeRobot (50 monitors)
+Database & Auth:
+  - Supabase Postgres (free tier) + Supabase Auth
+  - RLS policies enabled from start
+
+Infrastructure & Ops:
+  - DNS: Cloudflare (free)
+  - Monitoring: UptimeRobot (backend), Sentry (errors) free
+  - Secrets: per-module .env (no commits)
 
 Development:
-  - VCS: GitHub
-  - CI/CD: GitHub Actions
-  - Package Manager: pnpm
-  - Code Quality: ESLint + Prettier
-  - Testing: Vitest + Playwright
+  - GitHub + GitHub Actions
+  - Frontend tests: Vitest + Playwright
+  - Backend tests: Jest (NestJS)
+  - Worker tests: Go test
 ```
 
 ### 10.2 Alternative if You Prefer Kotlin
 
-If you prefer Kotlin/Spring Boot, use:
+If you prefer Kotlin/Spring Boot for the worker, use:
 - Frontend: React + Vite (same as above)
-- Backend: Kotlin + Spring Boot + Exposed
-- Database: PostgreSQL on Railway (keep it simple)
-- Everything else same as Option A
+- Worker: Kotlin + Spring Boot + Exposed + Quartz
+- Database: PostgreSQL on Neon (keep it simple)
+- BFF: Cloudflare Workers or Vercel Functions
+- Everything else same as above
 
-**Trade-off:** Higher memory usage but more structured code.
+**Trade-off:** Higher memory usage for worker but more structured code.
+
+### 10.3 Decide Now: Minimal Checklist
+
+- **Repo layout (final):**
+  - `frontend/` (Vite React + Tailwind + shadcn/ui + Redux Toolkit + RTK Query; deploy via Cloudflare Pages)
+  - `backend/` (NestJS on Oracle Always Free; integra Supabase Auth & Postgres)
+  - `worker-go/` (Go cron jobs; Dockerized; roda na Oracle VM)
+  - `infra/` (docker-compose, CI/CD, env templates, reverse proxy)
+
+- **Auth model (Supabase, final):**
+  - Use Supabase Auth JWT on the frontend; backend validates JWT (no service key exposure to client).
+  - Backend uses Supabase service-role key only on the server for privileged operations.
+  - Enable RLS early; design policies for `profiles`, `leagues`, `portfolios`, `transactions`.
+
+- **API contract (NestJS, final):**
+  - REST + OpenAPI: `/auth/me`, `/leagues`, `/portfolio`, `/scores`, `/leaderboard`.
+  - Pagination, filters, and standardized errors.
+  - Timezone: BRT for EOD; store timestamps in UTC.
+
+- **Data ingestion schedule (final):**
+  - EOD fetch window: 20:00–22:00 BRT.
+  - Idempotent upserts; retry/backoff; backfill strategy for missed days.
+
+- **Secrets & config (final):**
+  - `.env` per module; never commit secrets.
+  - Use `doppler`/`1Password`/`sops` or Oracle Vault later; start with `.env` locally.
+
+- **Networking & TLS (final):**
+  - DNS via Cloudflare (free).
+  - Reverse proxy: Caddy or Nginx on Oracle VM; Let's Encrypt certs.
+  - Only outbound connections from worker to Supabase.
+
+- **Logging & monitoring (final):**
+  - Structured logs (JSON) with correlation IDs across frontend → backend → worker.
+  - UptimeRobot for backend, basic dashboards; error tracking via Sentry free.
+
+- **Schema high-level (postpone details, agree on entities):**
+  - `stocks`, `prices_eod`, `users/profiles`, `leagues`, `memberships`, `portfolios`, `transactions`, `scores`, `leaderboard_views`.
+
+- **CI/CD (final):**
+  - Frontend: Vercel/Pages auto-deploy from `main`.
+  - Backend: GitHub Actions build + deploy to Oracle VM (SSH or Docker).
+  - Worker: Docker build + cron provisioning scripts.
 
 ---
 
@@ -749,12 +798,13 @@ If you prefer Kotlin/Spring Boot, use:
 ### Documentation
 - [Railway Docs](https://docs.railway.app/)
 - [Neon Docs](https://neon.tech/docs)
-- [Vercel Docs](https://vercel.com/docs)
+- [Cloudflare Pages Docs](https://developers.cloudflare.com/pages/)
 - [Prisma Docs](https://www.prisma.io/docs)
 - [AWS Lambda Docs](https://docs.aws.amazon.com/lambda/)
 - [Datomic Docs](https://docs.datomic.com/)
 - [Clojure Guides](https://clojure.org/guides/getting_started)
 - [Fly.io Docs](https://fly.io/docs/)
+- [Supabase Docs](https://supabase.com/docs)
 
 ### Libraries
 **Node.js:**
