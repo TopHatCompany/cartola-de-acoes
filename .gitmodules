@@ -1,3 +1,6 @@
 [submodule "cartola-de-acoes-vite-frontend"]
 	path = cartola-de-acoes-vite-frontend
 	url = git@github.com:TopHatCompany/cartola-de-acoes-vite-frontend
+[submodule "cartola-de-acoes-go-worker"]
+	path = cartola-de-acoes-go-worker
+	url = git@github.com:TopHatCompany/cartola-de-acoes-go-worker
