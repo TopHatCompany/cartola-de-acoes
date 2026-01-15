@@ -342,16 +342,16 @@ Technology choices are intentionally kept out of the PRD. See [TECH_ASSESSMENT.m
 - [ ] How to handle dividends and corporate actions? (Get from API )
 
 ### 11.2 Game Mechanics
-- [ ] Exact starting capital amount? (Suggestion: R$ 100,000 virtual)
-- [ ] Trading interval default (weekly, bi-weekly)? (Suggestion: Weekly)
-- [ ] Penalty amount for delisted stocks? (Suggestion: -100% value)
-- [ ] Exact rewards for top 10 (what advantages)? (Suggestion: Bonus starting capital for next season)
+- [ ] Exact starting capital amount? R$ 100,000 virtual
+- [ ] Trading interval default (weekly, bi-weekly)? Weekly
+- [ ] Penalty amount for delisted stocks? -100% value
+- [ ] Exact rewards for top 10 (what advantages)? Bonus starting capital for next season
 
 ### 11.3 Technical
-- [ ] Choose backend and frontend stack (see TECH_ASSESSMENT.md)
-- [ ] Choose database and hosting (see TECH_ASSESSMENT.md)
-- [ ] Authentication approach (JWT + password hashing recommended)
-- [ ] Price ingestion schedule (daily at what time)? (Suggestion: 8 PM BRT, after market close)
+- [x] Choose backend and frontend stack (see TECH_ASSESSMENT.md)
+- [x] Choose database and hosting (see TECH_ASSESSMENT.md)
+- [x] Authentication approach (JWT + password hashing recommended)
+- [x] Price ingestion schedule (daily at what time)? Using worker 8 PM BRT, after market close
 
 ---
 
@@ -361,26 +361,28 @@ Technology choices are intentionally kept out of the PRD. See [TECH_ASSESSMENT.m
 - [ ] Core domain model
 - [ ] Authentication & user management
 - [ ] Basic league creation
-- [ ] Database setup (PostgreSQL on Supabase/Railway)
+- [ ] Database setup (PostgreSQL on Supabase)
 - [ ] CI/CD pipeline (GitHub Actions)
 
 ### Phase 2: Trading (Weeks 5-8)
 - [ ] Stock data ingestion (Yahoo Finance/Brapi integration)
 - [ ] Portfolio management
 - [ ] Buy/sell functionality
-- [ ] Frontend basic UI (chosen framework setup)
+- [ ] Frontend basic UI
 
 ### Phase 3: Scoring (Weeks 9-10)
 - [ ] Scoring engine
 - [ ] Ranking calculation
 - [ ] Leaderboards
-- [ ] Deploy to Railway + Vercel
+- [ ] Deploy to cloudflare pages and oracle vm + supabase db
 
 ### Phase 4: Polish (Weeks 11-12)
-- [ ] Weekly summaries (email integration)
 - [ ] Season management
 - [ ] UI/UX improvements
 - [ ] Testing & bug fixes
+
+### Phase N: Comms
+- [ ] Weekly summaries (email integration)
 
 ---
 
@@ -399,3 +401,4 @@ Technology choices are intentionally kept out of the PRD. See [TECH_ASSESSMENT.m
 | 1.2 | 2026-01-12 | Update | Removed tech stack assumptions, made generic for all options |
 | 1.3 | 2026-01-13 | Update | Added Clojure/Datomic, AWS Lambda serverless, and updated Fly.io allowance notes |
 | 1.4 | 2026-01-13 | Update | Removed detailed tech stack from PRD; deferred to TECH_ASSESSMENT |
+| 1.5 | 2026-01-15 | Update | Timeline now is correct | 
