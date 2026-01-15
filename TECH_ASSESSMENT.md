@@ -107,7 +107,6 @@ Evaluate technology options for building a zero-budget fantasy stock market game
   - Immutable data model (perfect for audit trails)
   - Built-in time-travel queries
   - Datalog query language
-  - Free tier available (Datomic Cloud Starter)
   - Natural fit with Clojure's philosophy
 
 ---
@@ -200,6 +199,7 @@ Self-hosted (local Docker):
 - You manage security, backups, monitoring, and uptime
 
 **Recommendation for Backend:**
+1. **Oracle Cloud**
 1. **Railway** (Best DX, reasonable free tier, no surprises)
 2. **AWS Lambda** (Best for true serverless, 1M requests free)
 3. **Fly.io** (PAYG with one-time ~$5 trial credit; requires card; sub-$5 bills often waived)
@@ -627,18 +627,7 @@ Development:
   - Worker tests: Go test
 ```
 
-### 10.2 Alternative if You Prefer Kotlin
-
-If you prefer Kotlin/Spring Boot for the worker, use:
-- Frontend: React + Vite (same as above)
-- Worker: Kotlin + Spring Boot + Exposed + Quartz
-- Database: PostgreSQL on Neon (keep it simple)
-- BFF: Cloudflare Workers or Vercel Functions
-- Everything else same as above
-
-**Trade-off:** Higher memory usage for worker but more structured code.
-
-### 10.3 Decide Now: Minimal Checklist
+### 10.2 Decide Now: Minimal Checklist
 
 - **Repo layout (final):**
   - `frontend/` (Vite React + Tailwind + shadcn/ui + Redux Toolkit + RTK Query; deploy via Cloudflare Pages)
@@ -677,7 +666,7 @@ If you prefer Kotlin/Spring Boot for the worker, use:
   - `stocks`, `prices_eod`, `users/profiles`, `leagues`, `memberships`, `portfolios`, `transactions`, `scores`, `leaderboard_views`.
 
 - **CI/CD (final):**
-  - Frontend: Vercel/Pages auto-deploy from `main`.
+  - Frontend: Cloudflare Pages auto-deploy from `main`.
   - Backend: GitHub Actions build + deploy to Oracle VM (SSH or Docker).
   - Worker: Docker build + cron provisioning scripts.
 
@@ -686,8 +675,8 @@ If you prefer Kotlin/Spring Boot for the worker, use:
 ## 11. Implementation Phases
 
 ### Phase 1: Foundation (Week 1-2)
-- [ ] Set up monorepo structure
-- [ ] Configure database (Neon/Railway)
+- [x] Set up monorepo structure
+- [ ] Configure database (Supabase)
 - [ ] Basic auth (register/login/JWT)
 - [ ] Deploy pipeline (GitHub Actions)
 
@@ -703,74 +692,16 @@ If you prefer Kotlin/Spring Boot for the worker, use:
 - [ ] Leaderboard UI
 
 ### Phase 4: Polish (Week 9-12)
-- [ ] Email summaries
 - [ ] Season management
 - [ ] UI/UX refinement
 - [ ] Testing & bug fixes
 
----
-
-## 12. Cost Projection
-
-### 12.1 Free Tier Limits
-
-**Option A/B/C/D (Traditional Hosting):**
-| Service | Free Tier | Expected Usage | Headroom |
-|---------|-----------|----------------|----------|
-| Railway | $5 credit | ~$3-4/month | Good |
-| Neon DB | 3GB | ~100MB | Excellent |
-| Vercel | Unlimited | 10GB/month | Excellent |
-| MailerSend | 12k/month | 800/month | Excellent |
-| Stock Data | Varies | 50 req/day | Excellent |
-
-**Total Cost: $0/month** (stays within all free tiers)
-
-**Option E (Clojure + Datomic):**
-| Service | Free Tier | Expected Usage | Headroom |
-|---------|-----------|----------------|----------|
-| Railway | $5 credit | ~$3-4/month | Good |
-| Datomic Cloud Starter | Free | Small DB | Good |
-| Vercel | Unlimited | 10GB/month | Excellent |
-| MailerSend | 12k/month | 800/month | Excellent |
-
-**Total Cost: $0/month** (Datomic Starter is free but limited)
-
-**Option F (AWS Serverless):**
-| Service | Free Tier | Expected Usage | Headroom |
-|---------|-----------|----------------|----------|
-| Lambda | 1M requests/mo | ~100k/month | Excellent |
-| API Gateway | 1M requests/mo | ~100k/month | Excellent |
-| DynamoDB | 25GB + 25 WCU/RCU | ~1GB + low traffic | Excellent |
-| S3 | 5GB | ~100MB | Excellent |
-| CloudFront | 1TB + 10M requests | Low | Excellent |
-| SES | 62k emails/mo* | 800/month | Excellent |
-
-*When called from EC2/Lambda. Note: Requires verification and reputation building.
-
-**Total Cost: $0/month** (stays within generous AWS free tier)
-
-### 12.2 Scaling Triggers
-
-**Traditional Hosting (Options A-E):**
-- **100+ users**: Still free
-- **500+ users**: Might need Railway Pro ($5/month) or switch to Fly.io
-- **1000+ users**: Need paid DB ($25/month for Neon Pro)
-- **5000+ users**: Need CDN, caching (~$50/month total)
-
-**AWS Serverless (Option F):**
-- **100+ users**: Still free (excellent auto-scaling)
-- **500+ users**: Still likely free (~$0-5/month)
-- **1000+ users**: ~$10-20/month (Lambda + DynamoDB)
-- **5000+ users**: ~$50-100/month (still cheaper than traditional at scale)
-
-**Datomic Considerations (Option E):**
-- Datomic Cloud Starter is free but limited
-- Datomic Cloud Production starts at ~$50/month
-- Consider PostgreSQL for MVP, migrate to Datomic later if desired
+### Phase X: comms
+- [ ] Email summaries
 
 ---
 
-## 13. Next Steps
+## 12. Next Steps
 
 1. **Choose your stack** (Options: A=JS, B=Go, C=Python, D=Kotlin, E=Clojure, F=AWS Lambda)
 2. **Set up development environment**
@@ -793,7 +724,7 @@ If you prefer Kotlin/Spring Boot for the worker, use:
 
 ---
 
-## 14. Resources & References
+## 13. Resources & References
 
 ### Documentation
 - [Railway Docs](https://docs.railway.app/)
